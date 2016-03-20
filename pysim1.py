@@ -254,9 +254,10 @@ def generate_somatic(ref_dic,snp_dic,snp_list,num,outfilename,db,ref_range,hyp_r
                             try:
                                 if str_list[0][pois-1]!='N':
                                     old=str_list[0][pois-1]
+                                    new=SNP(str_list[t][pois-1].upper())
                                     for t in hapl:
-                                        str_list[t][pois-1]=SNP(str_list[t][pois-1].upper())
-                                    outfile.write(key+'\t'+str(pois)+'\t'+old+'\t'+str_list[t][pois-1]+'\thomozygous\n')
+                                        str_list[t][pois-1]=new
+                                    outfile.write(key+'\t'+str(pois)+'\t'+old+'\t'+new+'\thomozygous\n')
                                     i=i+1
                                     snp_list[key].append(pois)
                                     break
@@ -295,9 +296,11 @@ def generate_somatic(ref_dic,snp_dic,snp_list,num,outfilename,db,ref_range,hyp_r
                         str_list[hap][int(line[0])-1]=line[-1]
                         outfile.write(key+'\t'+line[0]+'\t'+str_list[hap][int(line[0])-1]+'\t'+line[-1]+'\t'+str(hap+1)+'\n')
                     else:
+                        old=str_list[0][int(line[0])-1]
+                        new=SNP(str_list[t][int(line[0])-1].upper())
                         for t in hapl:
                             str_list[t][int(line[0])-1]=line[-1]
-                        outfile.write(key+'\t'+line[0]+'\t'+str_list[t][int(line[0])-1]+'\t'+line[-1]+'\thomozygous\n')
+                        outfile.write(key+'\t'+line[0]+'\t'+old+'\t'+line[-1]+'\thomozygous\n')
                     i=i+1
                     if key not in snp_list:
                         snp_list[key]=[int(line[0])]
@@ -451,8 +454,6 @@ def deletion(ref,chrome,pois,length,snp_rate,outfile,specify,up_down_stream=50,i
         #l2=list_str[hap_t][pois-1:pois-1+length]
         outfile.write(str(hap_t+1)+':2\n')
         ref[chrome][hap_t]=''.join(l1+l2+l3)
-    for line in ref[chrome]:
-        print len(line)
     return ref
 def insertion(ref,chrome,pois,length,snp_rate,outfile,up_down_stream=50,indel_prob=1,min_indel_length=5,max_indel_length=15):
     list_str=[]
@@ -476,8 +477,6 @@ def insertion(ref,chrome,pois,length,snp_rate,outfile,up_down_stream=50,indel_pr
             l1=random_snp(l1[::-1],snp_number,up_down_stream)[::-1]
             l3=random_snp(l3,snp_number,up_down_stream)
         ref[chrome][line]=''.join(l1+l2+l3)
-    for line in ref[chrome]:
-        print len(line)
     return ref
 def translocation(ref,chrome,pois,length,str1_ins,snp_rate,outfile,up_down_stream=50,indel_prob=1,min_indel_length=5,max_indel_length=15):
     list_str=[]
@@ -510,8 +509,6 @@ def translocation(ref,chrome,pois,length,str1_ins,snp_rate,outfile,up_down_strea
             ref[chrome][line]=''.join(l1+str1_ins+l3)
         else:
             ref[chrome][line]=''.join(l1+str1_ins+l3)
-    for line in ref[chrome]:
-        print len(line)
     return ref
 def inversion(ref,chrome,pois,length,snp_rate,outfile,up_down_stream=50,indel_prob=1,min_indel_length=5,max_indel_length=15):
     list_str=[]
@@ -544,8 +541,6 @@ def inversion(ref,chrome,pois,length,snp_rate,outfile,up_down_stream=50,indel_pr
             ref[chrome][line]=''.join(l1+l2[::-1]+l3)
         else:
             ref[chrome][line]=''.join(l1+l2[::-1]+l3)
-    for line in ref[chrome]:
-        print len(line)
     return ref
 def tandem_duplication(ref,chrome,pois,length,snp_rate,outfile,up_down_stream=50,indel_prob=1,min_indel_length=5,max_indel_length=15,tandem_num=2):
     list_str=[]
@@ -625,9 +620,7 @@ def generate_pois(len_list,ref,ref_range):
             count=1
             pois=random.randint(ref_range[key[k]][0],ref_range[key[k]][1])
             tmp=[pois,pois+len_list[i][0]]
-            print ['pois1',pois]
             if ref_range[key[k]][0]<=pois+len_list[i][0]<=ref_range[key[k]][1]:
-                print['pois_done',pois]
                 #if pois_list==[]:
                 #    pois_list.append(tmp)
                 if key[k] not in pois_dic:
@@ -679,7 +672,6 @@ def generate_pois(len_list,ref,ref_range):
 def generate_subclone_pois(len_list,ref,ref_range,germline_dic):
     dic={}
     key=ref.keys()
-    print key
     #pois_list=[]
     pois_dic={}
     for t_key in germline_dic:
