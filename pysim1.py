@@ -4,7 +4,7 @@ from optparse import OptionParser
 import getopt
 import time
 import os
-import vcf
+#import vcf
 def read_vcf(dbsnp,chrome):
     snp_dic={}
     vcf_reader = vcf.Reader(open(dbsnp, 'r'))
@@ -254,7 +254,7 @@ def generate_somatic(ref_dic,snp_dic,snp_list,num,outfilename,db,ref_range,hyp_r
                             try:
                                 if str_list[0][pois-1]!='N':
                                     old=str_list[0][pois-1]
-                                    new=SNP(str_list[t][pois-1].upper())
+                                    new=SNP(str_list[0][pois-1].upper())
                                     for t in hapl:
                                         str_list[t][pois-1]=new
                                     outfile.write(key+'\t'+str(pois)+'\t'+old+'\t'+new+'\thomozygous\n')
@@ -348,12 +348,13 @@ def random_snp(l,n,up_down_stream):
         try:
             l[line]=SNP(l[line].upper())
         except:
-            print ['error',line,l]
+            continue
+            #print ['error',line,l]
     return l
 def intersection(l1,l2):
     tag=0
     for line in l2:
-        if l1[0]<line[0]<l1[1]<line[1] or line[0]<l1[0]<line[1]<l1[1]:
+        if l1[0]<=line[0]<=l1[1]<=line[1] or line[0]<=l1[0]<=line[1]<=l1[1] or l1[0]<=line[0]<=line[1]<=l1[1] or line[0]<=l1[0]<=l1[1]<=line[1]:
             tag=1
             break
         else:
@@ -616,8 +617,9 @@ def generate_pois(len_list,ref,ref_range):
     #str_len=[len(ref[tmp][0]) for tmp in dic]
     for i in range(len(len_list)):
         k=i%len(key)
+        count=1
+        tmp_count=0
         while True:
-            count=1
             pois=random.randint(ref_range[key[k]][0],ref_range[key[k]][1])
             tmp=[pois,pois+len_list[i][0]]
             if ref_range[key[k]][0]<=pois+len_list[i][0]<=ref_range[key[k]][1]:
@@ -660,10 +662,14 @@ def generate_pois(len_list,ref,ref_range):
                             break
                     else:
                         count=count+1
-                        if count<20:
+                        if count<30:
                             continue
                         else:
-                            break
+                            tmp_count=tmp_count+1
+                            if tmp_count>=5:
+                                break
+                            else:
+                                len_list[i][0]=int(len_list[i][0]/2)
             else:
                 continue
     for key in dic:
@@ -835,16 +841,18 @@ def generate_fasta(ref,dic,snp_rate,outfile,ref_range,up_down_stream=50,indel_pr
                 else:
                     tmp=0
                 if line[-1]=='del':
-                    ref=deletion(ref,key,line[0],line[1],snp_rate,up_down_stream,tmp,min_indel_length,max_indel_length)
+                    ref=deletion(ref,key,line[0],line[1],snp_rate,outfile,3,up_down_stream,tmp,min_indel_length,max_indel_length)
                 elif line[-1]=='inv':
-                    ref=inversion(ref,key,line[0],line[1],snp_rate,up_down_stream,tmp,min_indel_length,max_indel_length)
+                    ref=inversion(ref,key,line[0],line[1],snp_rate,outfile,up_down_stream,tmp,min_indel_length,max_indel_length)
                 elif line[-1]=='ins':
-                    ref=insertion(ref,key,line[0],line[1],snp_rate,up_down_stream,tmp,min_indel_length,max_indel_length)
+                    ref=insertion(ref,key,line[0],line[1],snp_rate,outfile,up_down_stream,tmp,min_indel_length,max_indel_length)
                 elif line[-1]=='tandem':
                     tandem_num=random.sample([2,3,4,5],1)[0]
-                    ref=tandem_duplication(ref,key,line[0],line[1],snp_rate,up_down_stream,tmp,min_indel_length,max_indel_length,tandem_num)
+                    ref=tandem_duplication(ref,key,line[0],line[1],snp_rate,outfile,up_down_stream,tmp,min_indel_length,max_indel_length,tandem_num)
                 elif line[-1].upper()=='CNV':
                     CNV_str=CNV(ref,key,line[0],line[1],CNV_str,line[2],snp_rate,up_down_stream=50,indel_prob=1,min_indel_length=5,max_indel_length=15)
+                elif line[-1]=='trans':
+                    ref=translocation(ref,key,line[0],line[1],line[2],snp_rate,outfile,up_down_stream,indel_prob,min_indel_length,max_indel_length)
                 else:
                     print line[-1]
                     continue

@@ -26,7 +26,7 @@ Description: simulate germline and somatic SVs.
         germline_num=cf.getint("pysim_settings", "germline_num")
         somatic_num=cf.getint("pysim_settings", "somatic_num")
         db=cf.get("pysim_settings", "db")
-        somatic_SNP_db=b=cf.get("pysim_settings", "somatic_SNP_db")
+        somatic_SNP_db=cf.get("pysim_settings", "somatic_SNP_db")
         hyp_rate=cf.getfloat("pysim_settings",'hyp_rate')
         up_down_stream=cf.getint("pysim_settings", "up_down_stream")
         snp_rate=cf.getfloat("pysim_settings",'snp_rate')
@@ -48,9 +48,15 @@ Description: simulate germline and somatic SVs.
             ref_germline=ref_result[0]
             ref_germline_new=ref_germline
             snp_list=ref_result[1]
+            germline_dic={}
+            output(ref_germline_new,germline_dic,out_prex+'germline.fa')
+            for ttttt in snp_list:
+                print ['snp_list_germline',len(snp_list[ttttt])]
             ref_somatic_result=generate_somatic(ref_germline,snp_dic,snp_list,somatic_num,'somatic_SNP_pois.txt',db,ref_range,hyp_rate)
             ref_somatic=ref_somatic_result[0]
             snp_list_somatic=ref_somatic_result[1]
+            for ttttt in snp_list_somatic:
+                print ['snp_list',len(snp_list_somatic[ttttt])]
             dic=generate_pois(len_list,ref,ref_range)
             germline_dic={}
             if float(germ_ratio)>0:
@@ -71,9 +77,9 @@ Description: simulate germline and somatic SVs.
                 outfile=open(out_prex+'SV_germline.txt','w')
                 ref_germline=generate_fasta(ref_germline,germline_dic,snp_rate,outfile,ref_range,up_down_stream,indel_prob,min_indel_length,max_indel_length)
                 outfile.close()
-                output(ref_germline,germline_dic,out_prex+'germline.fa')
-            else:
-                output(ref_germline,germline_dic,out_prex+'germline.fa')
+                output(ref_germline_new,germline_dic,out_prex+'germline.fa')
+            #else:
+            #    output(ref_germline_new,germline_dic,out_prex+'germline.fa')
             outfile=open(out_prex+'SV_somatic.txt','w')
             ref_somatic=generate_fasta(ref_somatic,dic,snp_rate,outfile,ref_range,up_down_stream,indel_prob,min_indel_length,max_indel_length)
             outfile.close()
