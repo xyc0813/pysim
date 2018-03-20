@@ -16,7 +16,7 @@ def read_vcf(dbsnp,chrome):
                 snp_dic[record.CHROM].append([record.POS,record.REF,record.ALT])
     else:
         chrome_list=chrome.split(',')
-        print chrome_list
+        print( chrome_list)
         for record in  vcf_reader:
             if record.CHROM in chrome_list:
                 if record.CHROM not in snp_dic:
@@ -32,7 +32,7 @@ def read_dbsnp(dbsnp,chome):
     if chome=='ALL':
         for line in open(dbsnp):
             if not line.startswith('#'):
-                newline=line.rstrip().split('\t')
+                newline=line.rstrip().split()#whitespace friendly
                 if len(newline[4])==1 and len(newline[3])==1:
                     if newline[0] not in snp_dic:
                         snp_dic[newline[0]]=[[newline[1],newline[3],newline[4]]]
@@ -40,10 +40,10 @@ def read_dbsnp(dbsnp,chome):
                         snp_dic[newline[0]].append([newline[1],newline[3],newline[4]])
     else:
         chrome_list=chome.split(',')
-        print chrome_list
+        print( chrome_list)
         for line in open(dbsnp):
             if not line.startswith('#'):
-                newline=line.rstrip().split('\t')
+                newline=line.rstrip().split()#whitespace friendly
                 if len(newline[4])==1 and len(newline[3])==1 and newline[0] in chrome_list:
                     if newline[0] not in snp_dic:
                         snp_dic[newline[0]]=[[newline[1],newline[3],newline[4]]]
@@ -55,8 +55,8 @@ def compute_range(ref):
     for key in ref:
         n=0
         k=0
-        for str1 in ref[key][0]:
-            n=n+k
+        for str1 in ref[key][0]: #char in first string (out of one)
+            #n=n+k
             if str1=='N':
                 n=n+1
                 k=0
@@ -68,8 +68,8 @@ def compute_range(ref):
                     continue
         end_n=0
         end_k=0
-        for str1 in ref[key][0][::-1]:
-            end_n=end_n+end_k
+        for str1 in ref[key][0][::-1]: #char in first string (out of one) from end
+            #end_n=end_n+end_k
             if str1=='N':
                 end_n=end_n+1
                 end_k=0
@@ -80,14 +80,14 @@ def compute_range(ref):
                 else:
                     continue
         ref_range[key]=[n,len(ref[key][0])-end_n]
-        print [key,n,len(ref[key][0])-end_n,end_n]
+        print( [key,n,len(ref[key][0])-end_n,end_n])
     return ref_range
 def read_indel(indel,chrome):
     snp_dic={}
     if chome=='ALL':
         for line in open(dbsnp):
             if not line.startswith('#'):
-                newline=line.rstrip().split('\t')
+                newline=line.rstrip().split()
                 if len(newline[4])==1 and len(newline[3])==1:
                     if newline[0] not in snp_dic:
                         snp_dic[newline[0]]=[[newline[1],newline[3],newline[4]]]
@@ -110,7 +110,7 @@ def read_indel(indel,chrome):
     else:
         for line in open(dbsnp):
             if not line.startswith('#'):
-                newline=line.rstrip().split('\t')
+                newline=line.rstrip().split()
                 if len(newline[4])==1 and len(newline[3])==1 and newline[0]==chome:
                     if newline[0] not in snp_dic:
                         snp_dic[newline[0]]=[[newline[1],newline[3],newline[4]]]
@@ -156,41 +156,62 @@ def reference(ref_name):
         ref_dic[chr_name].append(tmp_str)
     return ref_dic
 def generate_normal(ref_dic,snp_dic,num,outfilename,hyp_rate=0.5):
+    '''
+    ref_dic: length 1. key: value -> chrom_num: [ref_seq] (in this case GRCh38_chr22.fasta). list of strings, len 1
+    should be both haplotypes?
+    snp_dic: length 1. key:value -> chrom_num: dbsnp, in the form [[pos, ref, alt]]
+    ^ why are these dicts?
+    num = number of SNPs we want to make
+    return: ref_dic: dic containing chrom_num: [modified seq]
+        snp_list: list of snps introduced, one-indexed to ref_dic
+    
+    '''
+    k=iter(ref_dic.keys()).__next__()
+    print('size refdic',len(ref_dic[k][0]))
+    k2=iter(snp_dic.keys()).__next__()
+    print('last snp?',snp_dic[k2][-1])
     outfile=open(outfilename,'w')
     outfile.write('#chr\tpois\tref\talt\thap\n')
     snp_list={}
     #hapl=[0,1]
-    l1=[1 for i in range(int(num*hyp_rate))]
-    l2=[0 for i in range(num-int(num*hyp_rate))]
+    l1=[1 for i in range(int(num*hyp_rate))] # proportion homozygous
+    l2=[0 for i in range(num-int(num*hyp_rate))] #proportion heterozygous
     total_list=l1+l2
     random.shuffle(total_list)
     ref_list=[]
     num=int(num/len(ref_dic.keys()))
     i=0
     for key in ref_dic:
-        hapl=[k for k in range(len(ref_dic[key]))]
-        tmp_str_list=ref_dic[key]
+        hapl=[k for k in range(len(ref_dic[key]))] # copy of ref_seq as list ['N','N',...]
+        tmp_str_list=ref_dic[key] # ref_seq as string
         str_list=[]
-        for tmp in tmp_str_list:
+        for tmp in tmp_str_list: # another copy of ref_seq as list of lists... [['N'],['N']...]
             str_list.append(list(tmp))
-        if len(snp_dic[key])>=num:
-            random_list=random.sample(snp_dic[key],num)
+        if len(snp_dic[key])>=num: # num of snps in db > num snps desired -> almost always true
+            random_list=random.sample(snp_dic[key],num) # random set of snps from db
             for line in random_list:
-                if total_list[i]==0:
-                    hap=random.sample(hapl,1)[0]
-                    old=str_list[hap][int(line[0])-1]
-                    str_list[hap][int(line[0])-1]=line[-1]
-                    outfile.write(key+'\t'+line[0]+'\t'+old+'\t'+line[-1]+'\t'+str(hap+1)+'\n')
-                else:
-                    for t in hapl:
-                        old=str_list[t][int(line[0])-1]
-                        str_list[t][int(line[0])-1]=line[-1]
-                    outfile.write(key+'\t'+line[0]+'\t'+old+'\t'+line[-1]+'\thomozygous\n')
-                i=i+1
-                if key not in snp_list:
-                    snp_list[key]=[int(line[0])]
-                else:
-                    snp_list[key].append(int(line[0]))
+                try:
+                    if total_list[i]==0:
+                        hap=random.sample(hapl,1)[0] # pick a 'N' in ref_seq
+                        old=str_list[hap][int(line[0])-1]
+                        str_list[hap][int(line[0])-1]=line[-1] #1 haplotype[random position from dbsnp -1]
+                        outfile.write(key+'\t'+line[0]+'\t'+old+'\t'+line[-1]+'\t'+str(hap+1)+'\n')
+                    else:
+                        for t in hapl:
+                            old=str_list[t][int(line[0])-1]
+                            str_list[t][int(line[0])-1]=line[-1]
+                        outfile.write(key+'\t'+line[0]+'\t'+old+'\t'+line[-1]+'\thomozygous\n')
+                    i=i+1
+                    if key not in snp_list:
+                        snp_list[key]=[int(line[0])]
+                    else:
+                        snp_list[key].append(int(line[0]))
+                except Exception as e:
+                    print('Failed on line',line)
+                    print('Probably tried to find strlist[0][int(line[0])-1]',int(line[0])-1)
+                    print('and couldnt find it')
+                    print('i=',i)
+                    raise e
         else:
             for line in snp_dic[key]:
                 if total_list[i]==0:
@@ -215,7 +236,7 @@ def generate_normal(ref_dic,snp_dic,num,outfilename,hyp_rate=0.5):
     outfile.close()
     return [ref_dic,snp_list]
 
-def generate_somatic(ref_dic,snp_dic,snp_list,num,outfilename,db,ref_range,hyp_rate=0.5):
+def generate_somatic(ref_dic,snp_dic,num,outfilename,db,ref_range,hyp_rate=0.5):
     outfile=open(outfilename,'w')
     outfile.write('#chr\tpois\tref\talt\thap\n')
     l1=[1 for i in range(int(num*hyp_rate))]
@@ -224,9 +245,11 @@ def generate_somatic(ref_dic,snp_dic,snp_list,num,outfilename,db,ref_range,hyp_r
     random.shuffle(total_list)
     ref_list=[]
     num=int(num/len(ref_dic.keys()))
+    snp_list={}
     if db is 'N':
         i=0
         for key in ref_dic:
+            snp_list[key]=[]
             hapl=[k for k in range(len(ref_dic[key]))]
             tmp_str_list=ref_dic[key]
             str_list=[]
@@ -236,36 +259,33 @@ def generate_somatic(ref_dic,snp_dic,snp_list,num,outfilename,db,ref_range,hyp_r
             for j in range(num):
                 while True:
                     pois=random.randint(ref_range_list[0],ref_range_list[1])
-                    if pois not in snp_list[key]:
-                        if total_list[i]==0:
-                            hap=random.sample(hapl,1)[0]
-                            try:
-                                if str_list[hap][pois-1]!='N':
-                                    old=str_list[hap][pois-1]
-                                    str_list[hap][pois-1]=SNP(str_list[hap][pois-1].upper())
-                                    outfile.write(key+'\t'+str(pois)+'\t'+old+'\t'+str_list[hap][pois-1]+'\t'+str(hap+1)+'\n')
-                                    i=i+1
-                                    snp_list[key].append(pois)
-                                    break
-                            except:
-                                print [pois,hap]
-                                continue
-                        else:
-                            try:
-                                if str_list[0][pois-1]!='N':
-                                    old=str_list[0][pois-1]
-                                    new=SNP(str_list[0][pois-1].upper())
-                                    for t in hapl:
-                                        str_list[t][pois-1]=new
-                                    outfile.write(key+'\t'+str(pois)+'\t'+old+'\t'+new+'\thomozygous\n')
-                                    i=i+1
-                                    snp_list[key].append(pois)
-                                    break
-                            except:
-                                print [pois]
-                                continue
+                    if total_list[i]==0:
+                        hap=random.sample(hapl,1)[0]
+                        try:
+                            if str_list[hap][pois-1]!='N':
+                                old=str_list[hap][pois-1]
+                                str_list[hap][pois-1]=SNP(str_list[hap][pois-1].upper())
+                                outfile.write(key+'\t'+str(pois)+'\t'+old+'\t'+str_list[hap][pois-1]+'\t'+str(hap+1)+'\n')
+                                i=i+1
+                                snp_list[key].append(pois)
+                                break
+                        except:
+                            print( [pois,hap])
+                            continue
                     else:
-                        continue
+                        try:
+                            if str_list[0][pois-1]!='N':
+                                old=str_list[0][pois-1]
+                                new=SNP(str_list[0][pois-1].upper())
+                                for t in hapl:
+                                    str_list[t][pois-1]=new
+                                outfile.write(key+'\t'+str(pois)+'\t'+old+'\t'+new+'\thomozygous\n')
+                                i=i+1
+                                snp_list[key].append(pois)
+                                break
+                        except:
+                            print( [pois])
+                            continue
             tmp_str=[]
             for tmp in str_list:
                 tmp_str.append(''.join(tmp))
@@ -575,7 +595,7 @@ def tandem_duplication(ref,chrome,pois,length,snp_rate,outfile,up_down_stream=50
         else:
             ref[chrome][line]=''.join(l1+l2*tandem_num+l3)
     for line in ref[chrome]:
-        print len(line)
+        print( len(line))
     return ref
 def CNV(ref,chrome,pois,length,result,copy_number,snp_rate,up_down_stream=50,indel_prob=1,min_indel_length=5,max_indel_length=15):
     list_str=[]
@@ -593,7 +613,7 @@ def read_config(filename):
     sv_list=[]
     for line in open(filename):
         if not line.startswith('#'):
-            newline=line.rstrip().split('\t')
+            newline=line.rstrip().split()
             if newline[0].upper()!='CNV':
                 for i in range(int(newline[-1])):
                     sv_list.append([int(newline[1]),newline[0]])
@@ -806,7 +826,7 @@ def generate_fasta(ref,dic,snp_rate,outfile,ref_range,up_down_stream=50,indel_pr
     if indel_prob==1 or indel_prob==0:
         for key in dic:
             for line in dic[key]:
-                print line
+                print( line)
                 if line[-1]=='del':
                     ref=deletion(ref,key,line[0],line[1],snp_rate,outfile,3,up_down_stream,indel_prob,min_indel_length,max_indel_length)
                 elif line[-1]=='inv':
@@ -854,7 +874,7 @@ def generate_fasta(ref,dic,snp_rate,outfile,ref_range,up_down_stream=50,indel_pr
                 elif line[-1]=='trans':
                     ref=translocation(ref,key,line[0],line[1],line[2],snp_rate,outfile,up_down_stream,indel_prob,min_indel_length,max_indel_length)
                 else:
-                    print line[-1]
+                    print( line[-1])
                     continue
     if CNV_str!={}:
         ref=generate_CNV(ref,CNV_str,dic,ref_range,outfile)
@@ -868,7 +888,7 @@ def output(ref,dic,outfilename):
             i=0
             k=k+1
             str_len=len(line)
-            print str_len
+            print( str_len)
             outfile.write('>'+key+'_'+str(k)+'\n')
             while i+50<=str_len:
                 outfile.write(line[i:i+50]+'\n')

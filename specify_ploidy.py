@@ -74,11 +74,11 @@ Description: specify the number of ploidy for different chromesome
         ref_dic=ploidy(ref_dic,config_dic)
         output(ref_dic,outfilename)
 if __name__ == "__main__":
-    print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     start = time.clock()
     print('simulation begins at:'+str(start))
     main()
     end = time.clock()
     print('simulation ends at:'+str(end))
     print("The function run time is : %.03f seconds" %(end-start))
-    print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) )
