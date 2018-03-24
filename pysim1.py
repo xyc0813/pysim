@@ -129,9 +129,10 @@ def read_indel(indel,chrome):
                             else:
                                 snp_dic[newline[0]].append([newline[1],newline[3],newline[4],'del'])
     return snp_dic
+
 def reference(ref_name):
     ref_dic={}
-    chr_name=''
+    chr_name=None
     for line in open(ref_name):
         newline=line.rstrip()
         if newline.startswith('>'):
@@ -141,20 +142,22 @@ def reference(ref_name):
                 chr_split=newline.split('-')
             else:
                 chr_split=[newline]
-            if chr_name!='':
+            if chr_name!=None:
                 if chr_name not in ref_dic:
-                    ref_dic[chr_name]=[tmp_str]
+                    ref_dic[chr_name]=[sequence]
                 else:
-                    ref_dic[chr_name].append(tmp_str)
+                    ref_dic[chr_name].append(sequence)
+
             chr_name=chr_split[0].split('>')[1]
-            tmp_str=''
+            sequence=''
         else:
-            tmp_str=tmp_str+newline
+            sequence=sequence+newline
     if chr_name not in ref_dic:
-        ref_dic[chr_name]=[tmp_str]
+        ref_dic[chr_name]=[sequence]
     else:
-        ref_dic[chr_name].append(tmp_str)
+        ref_dic[chr_name].append(sequence)
     return ref_dic
+
 def generate_normal(ref_dic,snp_dic,num,outfilename,hyp_rate=0.5):
     '''
     ref_dic: length 1. key: value -> chrom_num: [ref_seq] (in this case GRCh38_chr22.fasta). list of strings, len 1
@@ -166,75 +169,48 @@ def generate_normal(ref_dic,snp_dic,num,outfilename,hyp_rate=0.5):
         snp_list: list of snps introduced, one-indexed to ref_dic
     
     '''
-    k=iter(ref_dic.keys()).__next__()
-    print('size refdic',len(ref_dic[k][0]))
-    k2=iter(snp_dic.keys()).__next__()
-    print('last snp?',snp_dic[k2][-1])
     outfile=open(outfilename,'w')
     outfile.write('#chr\tpois\tref\talt\thap\n')
     snp_list={}
-    #hapl=[0,1]
     l1=[1 for i in range(int(num*hyp_rate))] # proportion homozygous
     l2=[0 for i in range(num-int(num*hyp_rate))] #proportion heterozygous
     total_list=l1+l2
     random.shuffle(total_list)
-    ref_list=[]
     num=int(num/len(ref_dic.keys()))
     i=0
-    for key in ref_dic:
-        hapl=[k for k in range(len(ref_dic[key]))] # copy of ref_seq as list ['N','N',...]
-        tmp_str_list=ref_dic[key] # ref_seq as string
-        str_list=[]
-        for tmp in tmp_str_list: # another copy of ref_seq as list of lists... [['N'],['N']...]
-            str_list.append(list(tmp))
+    for key in ref_dic: #for each chrom
+        hapl=list(range(len(ref_dic[key]))) # [0]
+        alt_seq=ref_dic[key] # ref_seq as string. Will be subbing in SNPs
+
+        #determine which positions we will make snps
         if len(snp_dic[key])>=num: # num of snps in db > num snps desired -> almost always true
-            random_list=random.sample(snp_dic[key],num) # random set of snps from db
-            for line in random_list:
-                try:
-                    if total_list[i]==0:
-                        hap=random.sample(hapl,1)[0] # pick a 'N' in ref_seq
-                        old=str_list[hap][int(line[0])-1]
-                        str_list[hap][int(line[0])-1]=line[-1] #1 haplotype[random position from dbsnp -1]
-                        outfile.write(key+'\t'+line[0]+'\t'+old+'\t'+line[-1]+'\t'+str(hap+1)+'\n')
-                    else:
-                        for t in hapl:
-                            old=str_list[t][int(line[0])-1]
-                            str_list[t][int(line[0])-1]=line[-1]
-                        outfile.write(key+'\t'+line[0]+'\t'+old+'\t'+line[-1]+'\thomozygous\n')
-                    i=i+1
-                    if key not in snp_list:
-                        snp_list[key]=[int(line[0])]
-                    else:
-                        snp_list[key].append(int(line[0]))
-                except Exception as e:
-                    print('Failed on line',line)
-                    print('Probably tried to find strlist[0][int(line[0])-1]',int(line[0])-1)
-                    print('and couldnt find it')
-                    print('i=',i)
-                    raise e
+            snp_positions=random.sample(snp_dic[key],num) # random set of snps from db
         else:
-            for line in snp_dic[key]:
-                if total_list[i]==0:
-                    hap=random.sample(hapl,1)[0]
-                    old=str_list[hap][int(line[0])-1]
-                    str_list[hap][int(line[0])-1]=line[-1]
-                    outfile.write(key+'\t'+line[0]+'\t'+old+'\t'+line[-1]+'\t'+str(hap+1)+'\n')
-                else:
-                    for t in hapl:
-                        old=str_list[t][int(line[0])-1]
-                        str_list[t][int(line[0])-1]=line[-1]
-                    outfile.write(key+'\t'+line[0]+'\t'+old+'\t'+line[-1]+'\thomozygous\n')
-                i=i+1       
-                if key not in snp_list:
-                    snp_list[key]=[int(line[0])]
-                else:
-                    snp_list[key].append(int(line[0]))
-        tmp_str=[]
-        for tmp in str_list:
-            tmp_str.append(''.join(tmp))
-        ref_dic[key]=tmp_str
+            snp_positioins=snp_dic[key]
+
+        # make the snps
+        for line in snp_positions:
+            #raise Exception('this code is fucking awful')
+            if total_list[i]==0:
+                hap=random.sample(hapl,1)[0] # pick a 'N' in ref_seq
+                index = int(line[0])-1
+                old=alt_seq[hap][index]
+                alt_seq[hap]=alt_seq[hap][:index]+line[-1]+alt_seq[hap][index+1:] # make an snp
+                outfile.write(key+'\t'+line[0]+'\t'+old+'\t'+line[-1]+'\t'+str(hap+1)+'\n')
+            else:
+                for hap in hapl:
+                    index = int(line[0])-1
+                    old=alt_seq[hap][index]
+                    alt_seq[hap]=alt_seq[hap][:index]+line[-1]+alt_seq[hap][index+1:] # make an snp
+                outfile.write(key+'\t'+line[0]+'\t'+old+'\t'+line[-1]+'\thomozygous\n')
+            i=i+1
+            if key not in snp_list:
+                snp_list[key]=[int(line[0])]
+            else:
+                snp_list[key].append(int(line[0]))
+        ref_dic[key]=alt_seq
     outfile.close()
-    return [ref_dic,snp_list]
+    return (ref_dic,snp_list)
 
 def generate_somatic(ref_dic,snp_dic,num,outfilename,db,ref_range,hyp_rate=0.5):
     outfile=open(outfilename,'w')
