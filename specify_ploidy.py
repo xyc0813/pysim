@@ -27,7 +27,7 @@ def read_fasta(filename):
         if newline.startswith('>'):
             if chr_name!='':
                 ref_dic[chr_name]=tmp_str
-            chr_name=newline.split('>')[1]
+            chr_name=newline.split('>')[1].split(' ').pop(0)
             tmp_str=''
         else:
             tmp_str=tmp_str+newline.upper()
