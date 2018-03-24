@@ -8,6 +8,7 @@ def read_config(config_filename):
     for line in open(config_filename):
         if not line.startswith('#'):
             newline=line.rstrip().split('\t')
+            if 'chr' != newline[0][:2]: newline[0] = 'chr'+str(newline[0])
             dic[newline[0]]=int(newline[1])
         else:
             continue
@@ -26,8 +27,12 @@ def read_fasta(filename):
         newline=line.rstrip()
         if newline.startswith('>'):
             if chr_name!='':
+                if not chr_name.startswith('chr'):
+                    chr_name='chr'+chr_name
                 ref_dic[chr_name]=tmp_str
-            chr_name=newline.split('>')[1]
+            chr_name=newline.split('>')[1].split(' ').pop(0)
+            if not chr_name.startswith('chr'):
+                chr_name='chr'+chr_name
             tmp_str=''
         else:
             tmp_str=tmp_str+newline.upper()
