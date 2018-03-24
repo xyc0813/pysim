@@ -26,12 +26,8 @@ def read_fasta(filename):
         newline=line.rstrip()
         if newline.startswith('>'):
             if chr_name!='':
-                if not chr_name.startswith('chr'):
-                    chr_name='chr'+chr_name
                 ref_dic[chr_name]=tmp_str
             chr_name=newline.split('>')[1]
-            if not chr_name.startswith('chr'):
-                chr_name='chr'+chr_name
             tmp_str=''
         else:
             tmp_str=tmp_str+newline.upper()
@@ -66,7 +62,7 @@ Description: specify the number of ploidy for different chromesome
         parser.print_help()
     else:
         if opts.output is None:
-            outfilename='output_ploid.fa'
+            outfilename='output_ploidy.fa'
         else:
             outfilename=opts.output
         config_dic=read_config(opts.config)
