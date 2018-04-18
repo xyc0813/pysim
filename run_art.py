@@ -47,13 +47,13 @@ Description: run art
             output=opts.output
         run_art(opts.inFile,read_length,coverage,insert,sd,output)
 if __name__ == "__main__":
-    print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    print (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     start = time.clock()
     print('simulation begins at:'+str(start))
     main()
     end = time.clock()
     print('simulation ends at:'+str(end))
     print("The function run time is : %.03f seconds" %(end-start))
-    print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    print (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             
     

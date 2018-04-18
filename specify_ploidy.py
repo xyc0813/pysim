@@ -26,12 +26,8 @@ def read_fasta(filename):
         newline=line.rstrip()
         if newline.startswith('>'):
             if chr_name!='':
-                if not chr_name.startswith('chr'):
-                    chr_name='chr'+chr_name
                 ref_dic[chr_name]=tmp_str
-            chr_name=newline.split('>')[1]
-            if not chr_name.startswith('chr'):
-                chr_name='chr'+chr_name
+            chr_name=newline.split('>')[1].split(' ').pop(0)
             tmp_str=''
         else:
             tmp_str=tmp_str+newline.upper()
@@ -66,7 +62,7 @@ Description: specify the number of ploidy for different chromesome
         parser.print_help()
     else:
         if opts.output is None:
-            outfilename='output_ploid.fa'
+            outfilename='output_ploidy.fa'
         else:
             outfilename=opts.output
         config_dic=read_config(opts.config)
@@ -74,11 +70,11 @@ Description: specify the number of ploidy for different chromesome
         ref_dic=ploidy(ref_dic,config_dic)
         output(ref_dic,outfilename)
 if __name__ == "__main__":
-    print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     start = time.clock()
     print('simulation begins at:'+str(start))
     main()
     end = time.clock()
     print('simulation ends at:'+str(end))
     print("The function run time is : %.03f seconds" %(end-start))
-    print time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) )
